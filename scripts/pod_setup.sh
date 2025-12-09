@@ -52,6 +52,10 @@ if [ ! -d "ComfyUI-RMBG" ]; then
     cd ComfyUI-RMBG && pip install -r requirements.txt --break-system-packages -q && cd ..
 fi
 
+# 创建 RMBG 模型软链接（sam3.pt 存在 Volume 里）
+mkdir -p /root/ComfyUI/custom_nodes/ComfyUI-RMBG/models
+ln -sf /workspace/models/sam/sam3.pt /root/ComfyUI/custom_nodes/ComfyUI-RMBG/models/sam3.pt
+
 # comfyui_sam3
 if [ ! -d "comfyui_sam3" ]; then
     git clone https://github.com/wouterverweirder/comfyui_sam3.git
