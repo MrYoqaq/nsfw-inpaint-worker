@@ -37,6 +37,9 @@ rm -rf sam3 2>/dev/null || true
 mkdir -p sam3
 ln -sf /workspace/models/sam/sam3.pt sam3/sam3.pt
 
+# FLUX Fill 软链接到 diffusion_models（Load Diffusion Model 节点用）
+ln -sf /workspace/models/unet/flux1-fill-dev.safetensors diffusion_models/flux1-fill-dev.safetensors
+
 # =============================================================================
 # 3. 安装自定义节点
 # =============================================================================
