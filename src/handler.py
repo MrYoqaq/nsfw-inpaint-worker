@@ -1,6 +1,6 @@
 """
 NSFW Inpaint Worker - RunPod Serverless Handler
-接收图片 + mask目标 → SAM3分割 → FLUX Fill Inpaint → 返回NSFW图
+接收图片 + mask目标 → SAM3分割 → SDXL Inpaint → 返回NSFW图
 """
 
 import runpod
@@ -131,7 +131,7 @@ def handler(job):
 
 def build_workflow(input_path: str, mask_targets: list, prompt: str, negative_prompt: str) -> dict:
     """
-    构建 SAM3 + FLUX Fill Inpaint 工作流
+    构建 SAM3 + SDXL Inpaint 工作流
     """
     # TODO: 这里需要根据实际的 ComfyUI 节点结构来构建
     # 现在返回一个占位符，实际工作流需要在 ComfyUI 中设计后导出
@@ -140,10 +140,11 @@ def build_workflow(input_path: str, mask_targets: list, prompt: str, negative_pr
         # 这里是工作流的 JSON 结构
         # 需要包含：
         # 1. LoadImage 节点
-        # 2. SAM3 分割节点
-        # 3. CropAndStitch 节点
-        # 4. FLUX Fill Inpaint 节点
-        # 5. SaveImage 节点
+        # 2. SAM3 分割节点 (ComfyUI-RMBG)
+        # 3. InpaintCrop 节点 (CropAndStitch)
+        # 4. SDXL Inpaint (KSampler + VAE)
+        # 5. InpaintStitch 节点
+        # 6. SaveImage 节点
     }
 
     return workflow

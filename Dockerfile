@@ -1,7 +1,7 @@
 # =============================================================================
 # NSFW Inpaint Worker - RunPod Serverless
 # RTX 5090 (Blackwell) 兼容版本
-# CUDA 12.8 + PyTorch 2.8 + ComfyUI
+# CUDA 12.8 + PyTorch 2.8 + ComfyUI + SDXL + SAM3 预编译
 # =============================================================================
 
 FROM nvidia/cuda:12.8.0-cudnn-runtime-ubuntu22.04
@@ -11,7 +11,9 @@ ENV DEBIAN_FRONTEND=noninteractive \
     PIP_NO_CACHE_DIR=1 \
     COMFYUI_PATH=/comfyui
 
-# 系统依赖 + Python 3.11 (需要 deadsnakes PPA)
+# =============================================================================
+# 系统依赖 + Python 3.11
+# =============================================================================
 RUN apt-get update && apt-get install -y \
     software-properties-common \
     && add-apt-repository -y ppa:deadsnakes/ppa \
@@ -37,56 +39,65 @@ RUN apt-get update && apt-get install -y \
 RUN python -m ensurepip --upgrade && \
     python -m pip install --upgrade pip
 
-# PyTorch 2.8 with CUDA 12.8 (Blackwell 支持)
+# =============================================================================
+# PyTorch 2.8 with CUDA 12.8 (Blackwell RTX 5090 支持)
+# =============================================================================
 RUN pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
 
-# 克隆 ComfyUI
+# =============================================================================
+# 安装 ComfyUI
+# =============================================================================
 RUN git clone https://github.com/comfyanonymous/ComfyUI.git ${COMFYUI_PATH} && \
     cd ${COMFYUI_PATH} && \
     pip install -r requirements.txt
 
-# 安装 ComfyUI Manager
+# =============================================================================
+# 安装自定义节点
+# =============================================================================
 RUN cd ${COMFYUI_PATH}/custom_nodes && \
-    git clone https://github.com/ltdrdata/ComfyUI-Manager.git
-
-# 安装必要的自定义节点
-RUN cd ${COMFYUI_PATH}/custom_nodes && \
-    # SAM3 节点
-    git clone https://github.com/wouterverweirder/comfyui_sam3.git && \
+    # ComfyUI Manager
+    git clone https://github.com/ltdrdata/ComfyUI-Manager.git && \
+    # ComfyUI-RMBG (SAM3 + 衣服分割，33个节点)
+    git clone https://github.com/1038lab/ComfyUI-RMBG.git && \
     # Inpaint CropAndStitch
-    git clone https://github.com/lquesada/ComfyUI-Inpaint-CropAndStitch.git && \
-    # GGUF 支持 (量化模型)
-    git clone https://github.com/city96/ComfyUI-GGUF.git
+    git clone https://github.com/lquesada/ComfyUI-Inpaint-CropAndStitch.git
 
 # 安装节点依赖
-RUN cd ${COMFYUI_PATH}/custom_nodes/comfyui_sam3 && \
-    pip install -r requirements.txt || true
-RUN cd ${COMFYUI_PATH}/custom_nodes/ComfyUI-GGUF && \
-    pip install -r requirements.txt || true
+RUN cd ${COMFYUI_PATH}/custom_nodes/ComfyUI-RMBG && \
+    pip install -r requirements.txt
+RUN pip install GitPython toml rich
 
-# 复制并安装项目依赖
+# =============================================================================
+# 下载 SAM3 模型并 BAKE 进镜像
+# =============================================================================
+RUN mkdir -p ${COMFYUI_PATH}/models/sam3 && \
+    wget -O ${COMFYUI_PATH}/models/sam3/sam3.pt \
+    "https://huggingface.co/1038lab/sam3/resolve/main/sam3.pt"
+
+# =============================================================================
+# 创建模型目录软链接到 Volume（SDXL 结构）
+# =============================================================================
+RUN rm -rf ${COMFYUI_PATH}/models/checkpoints && \
+    rm -rf ${COMFYUI_PATH}/models/loras && \
+    rm -rf ${COMFYUI_PATH}/models/vae && \
+    ln -sf /runpod-volume/models/checkpoints ${COMFYUI_PATH}/models/checkpoints && \
+    ln -sf /runpod-volume/models/loras ${COMFYUI_PATH}/models/loras && \
+    ln -sf /runpod-volume/models/vae ${COMFYUI_PATH}/models/vae
+
+# =============================================================================
+# 复制项目文件
+# =============================================================================
 COPY requirements.txt /requirements.txt
 RUN pip install -r /requirements.txt
 
-# 复制 handler
 COPY src/handler.py /handler.py
 COPY src/comfy_api.py /comfy_api.py
 
-# 创建模型目录软链接到 Volume
-# 先删除原有目录，再创建软链接
-RUN rm -rf ${COMFYUI_PATH}/models/checkpoints && \
-    rm -rf ${COMFYUI_PATH}/models/unet && \
-    rm -rf ${COMFYUI_PATH}/models/loras && \
-    rm -rf ${COMFYUI_PATH}/models/clip && \
-    rm -rf ${COMFYUI_PATH}/models/vae && \
-    mkdir -p ${COMFYUI_PATH}/models/sam && \
-    ln -sf /runpod-volume/models/checkpoints ${COMFYUI_PATH}/models/checkpoints && \
-    ln -sf /runpod-volume/models/unet ${COMFYUI_PATH}/models/unet && \
-    ln -sf /runpod-volume/models/loras ${COMFYUI_PATH}/models/loras && \
-    ln -sf /runpod-volume/models/clip ${COMFYUI_PATH}/models/clip && \
-    ln -sf /runpod-volume/models/vae ${COMFYUI_PATH}/models/vae && \
-    ln -sf /runpod-volume/models/sam ${COMFYUI_PATH}/models/sam
-
+# =============================================================================
+# 启动
+# =============================================================================
 WORKDIR /
+
+EXPOSE 8188
 
 CMD ["python", "/handler.py"]
