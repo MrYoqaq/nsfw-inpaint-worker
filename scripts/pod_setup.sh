@@ -67,7 +67,7 @@ fi
 # 4. 安装额外依赖
 # =============================================================================
 echo "📚 安装额外依赖..."
-pip install GitPython toml --break-system-packages -q
+pip install GitPython toml rich --break-system-packages -q
 
 # =============================================================================
 # 5. 启动 ComfyUI
