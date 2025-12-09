@@ -33,6 +33,7 @@ ln -sf /workspace/models/loras loras
 ln -sf /workspace/models/clip clip
 ln -sf /workspace/models/vae vae
 # SAM3 模型软链接（RMBG 期望在 models/sam3/ 目录）
+rm -rf sam3 2>/dev/null || true
 mkdir -p sam3
 ln -sf /workspace/models/sam/sam3.pt sam3/sam3.pt
 
