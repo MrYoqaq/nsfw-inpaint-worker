@@ -32,8 +32,9 @@ ln -sf /workspace/models/unet unet
 ln -sf /workspace/models/loras loras
 ln -sf /workspace/models/clip clip
 ln -sf /workspace/models/vae vae
-mkdir -p sam
-ln -sf /workspace/models/sam/sam3.safetensors sam/sam3.safetensors
+# SAM3 模型软链接（RMBG 期望在 models/sam3/ 目录）
+mkdir -p sam3
+ln -sf /workspace/models/sam/sam3.pt sam3/sam3.pt
 
 # =============================================================================
 # 3. 安装自定义节点
@@ -51,10 +52,6 @@ if [ ! -d "ComfyUI-RMBG" ]; then
     git clone https://github.com/1038lab/ComfyUI-RMBG.git
     cd ComfyUI-RMBG && pip install -r requirements.txt --break-system-packages -q && cd ..
 fi
-
-# 创建 RMBG 模型软链接（sam3.pt 存在 Volume 里）
-mkdir -p /root/ComfyUI/custom_nodes/ComfyUI-RMBG/models
-ln -sf /workspace/models/sam/sam3.pt /root/ComfyUI/custom_nodes/ComfyUI-RMBG/models/sam3.pt
 
 # comfyui_sam3
 if [ ! -d "comfyui_sam3" ]; then
