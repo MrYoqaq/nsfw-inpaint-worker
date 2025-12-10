@@ -67,7 +67,9 @@ RUN cd ${COMFYUI_PATH}/custom_nodes && \
     # ControlNet Aux (DWPose 等预处理器)
     git clone https://github.com/Fannovel16/comfyui_controlnet_aux.git && \
     # Impact Pack (常用工具节点)
-    git clone https://github.com/ltdrdata/ComfyUI-Impact-Pack.git
+    git clone https://github.com/ltdrdata/ComfyUI-Impact-Pack.git && \
+    # 🔥 KJNodes (GrowMaskWithBlur 等节点)
+    git clone https://github.com/kijai/ComfyUI-KJNodes.git
 
 # 安装节点依赖
 RUN cd ${COMFYUI_PATH}/custom_nodes/ComfyUI-RMBG && pip install -r requirements.txt
@@ -75,6 +77,8 @@ RUN cd ${COMFYUI_PATH}/custom_nodes/comfyui_controlnet_aux && pip install -r req
 RUN cd ${COMFYUI_PATH}/custom_nodes/ComfyUI-Impact-Pack && \
     pip install -r requirements.txt && \
     python install.py
+RUN cd ${COMFYUI_PATH}/custom_nodes/ComfyUI-KJNodes && \
+    pip install -r requirements.txt || true
 RUN pip install GitPython toml rich
 
 # =============================================================================

@@ -45,11 +45,13 @@ def start_comfyui():
     """启动 ComfyUI 服务"""
     global comfy_process, comfy_api
 
+    # 🔥 用 DEVNULL 丢弃输出，避免 pipe 缓冲区满导致死锁！
+    # 之前用 PIPE 但不读取，ComfyUI 输出太多会阻塞整个进程！
     comfy_process = subprocess.Popen(
         ["python", "main.py", "--listen", "127.0.0.1", "--port", "8188", "--disable-auto-launch"],
         cwd=COMFYUI_PATH,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL
     )
 
     comfy_api = ComfyAPI("http://127.0.0.1:8188")
