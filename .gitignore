@@ -35,3 +35,9 @@ logs/
 # OS
 .DS_Store
 Thumbs.db
+
+# Test images and temp files in workflows
+workflows/*.png
+workflows/*.jpg
+workflows/nul
+debug_output.png

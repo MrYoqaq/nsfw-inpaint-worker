@@ -1,0 +1,401 @@
+{
+  "last_node_id": 70,
+  "last_link_id": 100,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "CheckpointLoaderSimple",
+      "pos": [100, 100],
+      "size": [315, 98],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "outputs": [
+        {"name": "MODEL", "type": "MODEL", "links": [1], "slot_index": 0},
+        {"name": "CLIP", "type": "CLIP", "links": [2, 3], "slot_index": 1},
+        {"name": "VAE", "type": "VAE", "links": null}
+      ],
+      "properties": {"Node name for S&R": "CheckpointLoaderSimple"},
+      "widgets_values": ["WAI-illustrious-SDXL.safetensors"],
+      "_meta": {"title": "📦 SDXL Checkpoint"}
+    },
+    {
+      "id": 2,
+      "type": "VAELoader",
+      "pos": [100, 250],
+      "size": [315, 58],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "outputs": [
+        {"name": "VAE", "type": "VAE", "links": [4, 5], "slot_index": 0}
+      ],
+      "properties": {"Node name for S&R": "VAELoader"},
+      "widgets_values": ["sdxl_vae.safetensors"],
+      "_meta": {"title": "🎨 SDXL VAE"}
+    },
+    {
+      "id": 3,
+      "type": "LoadImage",
+      "pos": [100, 400],
+      "size": [315, 314],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "outputs": [
+        {"name": "IMAGE", "type": "IMAGE", "links": [10, 11, 12, 80], "slot_index": 0},
+        {"name": "MASK", "type": "MASK", "links": null}
+      ],
+      "properties": {"Node name for S&R": "LoadImage"},
+      "widgets_values": ["example.png", "image"],
+      "_meta": {"title": "📷 输入图像"}
+    },
+    {
+      "id": 60,
+      "type": "ControlNetLoader",
+      "pos": [500, 750],
+      "size": [315, 58],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "outputs": [
+        {"name": "CONTROL_NET", "type": "CONTROL_NET", "links": [82], "slot_index": 0}
+      ],
+      "properties": {"Node name for S&R": "ControlNetLoader"},
+      "widgets_values": ["controlnet-openpose-sdxl.safetensors"],
+      "_meta": {"title": "🎮 ControlNet OpenPose 模型"}
+    },
+    {
+      "id": 61,
+      "type": "DWPreprocessor",
+      "pos": [500, 850],
+      "size": [315, 200],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {"name": "image", "type": "IMAGE", "link": 80}
+      ],
+      "outputs": [
+        {"name": "IMAGE", "type": "IMAGE", "links": [81, 85], "slot_index": 0}
+      ],
+      "properties": {"Node name for S&R": "DWPreprocessor"},
+      "widgets_values": ["enable", "enable", "enable", 512, 1.0, true],
+      "_meta": {"title": "🦴 DWPose 骨架检测"}
+    },
+    {
+      "id": 62,
+      "type": "ControlNetApplyAdvanced",
+      "pos": [900, 750],
+      "size": [315, 186],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {"name": "positive", "type": "CONDITIONING", "link": 30},
+        {"name": "negative", "type": "CONDITIONING", "link": 32},
+        {"name": "control_net", "type": "CONTROL_NET", "link": 82},
+        {"name": "image", "type": "IMAGE", "link": 81}
+      ],
+      "outputs": [
+        {"name": "positive", "type": "CONDITIONING", "links": [83], "slot_index": 0},
+        {"name": "negative", "type": "CONDITIONING", "links": [84], "slot_index": 1}
+      ],
+      "properties": {"Node name for S&R": "ControlNetApplyAdvanced"},
+      "widgets_values": [0.6, 0.0, 1.0],
+      "_meta": {"title": "🎯 应用 ControlNet (强度0.6)"}
+    },
+    {
+      "id": 63,
+      "type": "PreviewImage",
+      "pos": [500, 1100],
+      "size": [300, 250],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {"name": "images", "type": "IMAGE", "link": 85}
+      ],
+      "properties": {"Node name for S&R": "PreviewImage"},
+      "_meta": {"title": "👀 预览骨架"}
+    },
+    {
+      "id": 10,
+      "type": "SAM3Segment",
+      "pos": [500, 400],
+      "size": [350, 280],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {"name": "image", "type": "IMAGE", "link": 10}
+      ],
+      "outputs": [
+        {"name": "image", "type": "IMAGE", "links": null, "slot_index": 0},
+        {"name": "mask", "type": "MASK", "links": [20], "slot_index": 1}
+      ],
+      "properties": {"Node name for S&R": "SAM3Segment"},
+      "widgets_values": [
+        "clothes, dress, skirt, bra, panties",
+        "sam3",
+        "cuda",
+        0.5,
+        0,
+        0,
+        false,
+        false,
+        "Alpha",
+        "#222222"
+      ],
+      "_meta": {"title": "🎯 SAM3 分割 - 输入要脱的衣服"}
+    },
+    {
+      "id": 11,
+      "type": "GrowMaskWithBlur",
+      "pos": [900, 400],
+      "size": [315, 246],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {"name": "mask", "type": "MASK", "link": 20}
+      ],
+      "outputs": [
+        {"name": "mask", "type": "MASK", "links": [21, 22], "slot_index": 0},
+        {"name": "mask_inverted", "type": "MASK", "links": null}
+      ],
+      "properties": {"Node name for S&R": "GrowMaskWithBlur"},
+      "widgets_values": [20, 0, true, false, 20, 1, 1, false],
+      "_meta": {"title": "🔧 膨胀+模糊 Mask (expand=20, blur=20)"}
+    },
+    {
+      "id": 20,
+      "type": "CLIPTextEncode",
+      "pos": [500, 100],
+      "size": [400, 100],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {"name": "clip", "type": "CLIP", "link": 2}
+      ],
+      "outputs": [
+        {"name": "CONDITIONING", "type": "CONDITIONING", "links": [30], "slot_index": 0}
+      ],
+      "properties": {"Node name for S&R": "CLIPTextEncode"},
+      "widgets_values": ["bare legs, bare thighs, bare hips, smooth skin, nude lower body, detailed anatomy, anime style, high quality"],
+      "color": "#232",
+      "bgcolor": "#353",
+      "_meta": {"title": "✨ 正面提示词 (描述身体部位)"}
+    },
+    {
+      "id": 21,
+      "type": "CLIPTextEncode",
+      "pos": [500, 250],
+      "size": [400, 100],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {"name": "clip", "type": "CLIP", "link": 3}
+      ],
+      "outputs": [
+        {"name": "CONDITIONING", "type": "CONDITIONING", "links": [32], "slot_index": 0}
+      ],
+      "properties": {"Node name for S&R": "CLIPTextEncode"},
+      "widgets_values": ["clothes, dress, bra, panties, underwear, swimsuit, bikini, censored, blur, mosaic, low quality, worst quality, deformed limbs, extra limbs, bad anatomy"],
+      "color": "#322",
+      "bgcolor": "#533",
+      "_meta": {"title": "❌ 负面提示词 (加了 bad anatomy)"}
+    },
+    {
+      "id": 30,
+      "type": "InpaintModelConditioning",
+      "pos": [1300, 100],
+      "size": [302, 138],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {"name": "positive", "type": "CONDITIONING", "link": 83},
+        {"name": "negative", "type": "CONDITIONING", "link": 84},
+        {"name": "vae", "type": "VAE", "link": 4},
+        {"name": "pixels", "type": "IMAGE", "link": 11},
+        {"name": "mask", "type": "MASK", "link": 21}
+      ],
+      "outputs": [
+        {"name": "positive", "type": "CONDITIONING", "links": [40], "slot_index": 0},
+        {"name": "negative", "type": "CONDITIONING", "links": [41], "slot_index": 1},
+        {"name": "latent", "type": "LATENT", "links": [42], "slot_index": 2}
+      ],
+      "properties": {"Node name for S&R": "InpaintModelConditioning"},
+      "widgets_values": [true],
+      "_meta": {"title": "🎭 Inpaint 条件准备"}
+    },
+    {
+      "id": 31,
+      "type": "DifferentialDiffusion",
+      "pos": [1300, 300],
+      "size": [277, 58],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {"name": "model", "type": "MODEL", "link": 1}
+      ],
+      "outputs": [
+        {"name": "MODEL", "type": "MODEL", "links": [43], "slot_index": 0}
+      ],
+      "properties": {"Node name for S&R": "DifferentialDiffusion"},
+      "_meta": {"title": "🌊 Differential Diffusion"}
+    },
+    {
+      "id": 40,
+      "type": "KSampler",
+      "pos": [1700, 100],
+      "size": [315, 262],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [
+        {"name": "model", "type": "MODEL", "link": 43},
+        {"name": "positive", "type": "CONDITIONING", "link": 40},
+        {"name": "negative", "type": "CONDITIONING", "link": 41},
+        {"name": "latent_image", "type": "LATENT", "link": 42}
+      ],
+      "outputs": [
+        {"name": "LATENT", "type": "LATENT", "links": [50], "slot_index": 0}
+      ],
+      "properties": {"Node name for S&R": "KSampler"},
+      "widgets_values": [123456789, "randomize", 35, 3, "dpmpp_sde_gpu", "karras", 1],
+      "_meta": {"title": "🎲 KSampler (35步)"}
+    },
+    {
+      "id": 41,
+      "type": "VAEDecode",
+      "pos": [2100, 100],
+      "size": [140, 46],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [
+        {"name": "samples", "type": "LATENT", "link": 50},
+        {"name": "vae", "type": "VAE", "link": 5}
+      ],
+      "outputs": [
+        {"name": "IMAGE", "type": "IMAGE", "links": [60], "slot_index": 0}
+      ],
+      "properties": {"Node name for S&R": "VAEDecode"},
+      "_meta": {"title": "🖼️ VAE 解码"}
+    },
+    {
+      "id": 50,
+      "type": "SaveImage",
+      "pos": [2300, 100],
+      "size": [400, 400],
+      "flags": {},
+      "order": 15,
+      "mode": 0,
+      "inputs": [
+        {"name": "images", "type": "IMAGE", "link": 60}
+      ],
+      "properties": {"Node name for S&R": "SaveImage"},
+      "widgets_values": ["NSFW_Inpaint"],
+      "_meta": {"title": "💾 保存结果"}
+    },
+    {
+      "id": 12,
+      "type": "MaskToImage",
+      "pos": [1300, 500],
+      "size": [200, 30],
+      "flags": {},
+      "order": 16,
+      "mode": 0,
+      "inputs": [
+        {"name": "mask", "type": "MASK", "link": 22}
+      ],
+      "outputs": [
+        {"name": "IMAGE", "type": "IMAGE", "links": [70], "slot_index": 0}
+      ],
+      "properties": {"Node name for S&R": "MaskToImage"},
+      "_meta": {"title": "Mask 转图像"}
+    },
+    {
+      "id": 13,
+      "type": "PreviewImage",
+      "pos": [1300, 550],
+      "size": [250, 200],
+      "flags": {},
+      "order": 17,
+      "mode": 0,
+      "inputs": [
+        {"name": "images", "type": "IMAGE", "link": 70}
+      ],
+      "properties": {"Node name for S&R": "PreviewImage"},
+      "_meta": {"title": "👀 预览 Mask"}
+    }
+  ],
+  "links": [
+    [1, 1, 0, 31, 0, "MODEL"],
+    [2, 1, 1, 20, 0, "CLIP"],
+    [3, 1, 1, 21, 0, "CLIP"],
+    [4, 2, 0, 30, 2, "VAE"],
+    [5, 2, 0, 41, 1, "VAE"],
+    [10, 3, 0, 10, 0, "IMAGE"],
+    [11, 3, 0, 30, 3, "IMAGE"],
+    [12, 3, 0, 62, 3, "IMAGE"],
+    [20, 10, 1, 11, 0, "MASK"],
+    [21, 11, 0, 30, 4, "MASK"],
+    [22, 11, 0, 12, 0, "MASK"],
+    [30, 20, 0, 62, 0, "CONDITIONING"],
+    [32, 21, 0, 62, 1, "CONDITIONING"],
+    [40, 30, 0, 40, 1, "CONDITIONING"],
+    [41, 30, 1, 40, 2, "CONDITIONING"],
+    [42, 30, 2, 40, 3, "LATENT"],
+    [43, 31, 0, 40, 0, "MODEL"],
+    [50, 40, 0, 41, 0, "LATENT"],
+    [60, 41, 0, 50, 0, "IMAGE"],
+    [70, 12, 0, 13, 0, "IMAGE"],
+    [80, 3, 0, 61, 0, "IMAGE"],
+    [81, 61, 0, 62, 3, "IMAGE"],
+    [82, 60, 0, 62, 2, "CONTROL_NET"],
+    [83, 62, 0, 30, 0, "CONDITIONING"],
+    [84, 62, 1, 30, 1, "CONDITIONING"],
+    [85, 61, 0, 63, 0, "IMAGE"]
+  ],
+  "groups": [
+    {
+      "title": "📥 输入",
+      "bounding": [80, 50, 380, 700],
+      "color": "#3f789e"
+    },
+    {
+      "title": "🦴 ControlNet 姿势控制 (新增!)",
+      "bounding": [480, 700, 800, 700],
+      "color": "#A8A"
+    },
+    {
+      "title": "🎯 SAM3 分割 + Mask 处理",
+      "bounding": [480, 350, 800, 320],
+      "color": "#88A"
+    },
+    {
+      "title": "✨ 提示词",
+      "bounding": [480, 50, 450, 280],
+      "color": "#8A8"
+    },
+    {
+      "title": "🎨 Inpaint 核心",
+      "bounding": [1280, 50, 800, 350],
+      "color": "#A88"
+    }
+  ],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.5,
+      "offset": [0, 0]
+    }
+  },
+  "version": 0.4
+}

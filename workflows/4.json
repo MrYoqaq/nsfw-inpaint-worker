@@ -1,0 +1,355 @@
+{
+  "1": {
+    "inputs": {
+      "image": "example.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "加载图像"
+    }
+  },
+  "4": {
+    "inputs": {
+      "clip_name": "qwen_3_4b.safetensors",
+      "type": "lumina2",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "CLIP加载器 (Qwen)"
+    }
+  },
+  "5": {
+    "inputs": {
+      "unet_name": "z_image_turbo_bf16.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "UNet加载器 (Z-Image)"
+    }
+  },
+  "6": {
+    "inputs": {
+      "vae_name": "ae.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "加载VAE"
+    }
+  },
+  "7": {
+    "inputs": {
+      "lora_name": "zimage-nsfw.safetensors",
+      "strength_model": 0.8,
+      "model": [
+        "5",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "LoRA - NSFW"
+    }
+  },
+  "7d": {
+    "inputs": {
+      "shift": 3.0,
+      "model": [
+        "7",
+        0
+      ]
+    },
+    "class_type": "ModelSamplingAuraFlow",
+    "_meta": {
+      "title": "ModelSamplingAuraFlow (shift=3)"
+    }
+  },
+  "8": {
+    "inputs": {
+      "text": "nude, naked, bare skin, exposed breasts, nipples, natural body, soft skin texture, photorealistic, beautiful woman",
+      "clip": [
+        "4",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "Positive Prompt"
+    }
+  },
+  "10": {
+    "inputs": {
+      "conditioning": [
+        "8",
+        0
+      ]
+    },
+    "class_type": "ConditioningZeroOut",
+    "_meta": {
+      "title": "Negative (ZeroOut)"
+    }
+  },
+  "11": {
+    "inputs": {
+      "seed": 42,
+      "steps": 9,
+      "cfg": 1.0,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1.0,
+      "LanPaint_NumSteps": 5,
+      "LanPaint_PromptMode": "Image First",
+      "LanPaint_Info": "LanPaint KSampler - Z-Image Turbo + NSFW LoRA",
+      "Inpainting_mode": "🖼️ Image Inpainting",
+      "model": [
+        "7d",
+        0
+      ],
+      "positive": [
+        "8",
+        0
+      ],
+      "negative": [
+        "10",
+        0
+      ],
+      "latent_image": [
+        "22",
+        0
+      ]
+    },
+    "class_type": "LanPaint_KSampler",
+    "_meta": {
+      "title": "LanPaint K采样器"
+    }
+  },
+  "12": {
+    "inputs": {
+      "samples": [
+        "11",
+        0
+      ],
+      "vae": [
+        "6",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码"
+    }
+  },
+  "16": {
+    "inputs": {
+      "filename_prefix": "lanpaint_nsfw",
+      "images": [
+        "23",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像"
+    }
+  },
+  "17": {
+    "inputs": {
+      "prompt": "clothes",
+      "sam3_model": "sam3",
+      "device": "Auto",
+      "confidence_threshold": 0.5,
+      "mask_blur": 8,
+      "mask_offset": 0,
+      "invert_output": false,
+      "background": "Color",
+      "background_color": "#000000",
+      "image": [
+        "1",
+        0
+      ]
+    },
+    "class_type": "SAM3Segment",
+    "_meta": {
+      "title": "SAM3 Segmentation"
+    }
+  },
+  "18": {
+    "inputs": {
+      "pixels": [
+        "1",
+        0
+      ],
+      "vae": [
+        "6",
+        0
+      ]
+    },
+    "class_type": "VAEEncode",
+    "_meta": {
+      "title": "VAE编码 (原图)"
+    }
+  },
+  "19": {
+    "inputs": {
+      "samples": [
+        "18",
+        0
+      ],
+      "vae": [
+        "6",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码 (获取尺寸)"
+    }
+  },
+  "20": {
+    "inputs": {
+      "images": [
+        "17",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "Mask Preview"
+    }
+  },
+  "21": {
+    "inputs": {
+      "upscale_method": "area",
+      "crop": "center",
+      "image": [
+        "1",
+        0
+      ],
+      "width": [
+        "25",
+        0
+      ],
+      "height": [
+        "25",
+        1
+      ]
+    },
+    "class_type": "ImageScale",
+    "_meta": {
+      "title": "缩放图像"
+    }
+  },
+  "22": {
+    "inputs": {
+      "samples": [
+        "26",
+        0
+      ],
+      "mask": [
+        "24",
+        0
+      ]
+    },
+    "class_type": "SetLatentNoiseMask",
+    "_meta": {
+      "title": "设置噪声蒙版"
+    }
+  },
+  "23": {
+    "inputs": {
+      "blend_overlap": 9,
+      "image1": [
+        "1",
+        0
+      ],
+      "image2": [
+        "12",
+        0
+      ],
+      "mask": [
+        "17",
+        1
+      ]
+    },
+    "class_type": "LanPaint_MaskBlend",
+    "_meta": {
+      "title": "LanPaint MaskBlend"
+    }
+  },
+  "24": {
+    "inputs": {
+      "channel": "red",
+      "image": [
+        "27",
+        0
+      ]
+    },
+    "class_type": "ImageToMask",
+    "_meta": {
+      "title": "缩放后的Mask"
+    }
+  },
+  "25": {
+    "inputs": {
+      "image": [
+        "19",
+        0
+      ]
+    },
+    "class_type": "GetImageSize",
+    "_meta": {
+      "title": "获取VAE兼容尺寸"
+    }
+  },
+  "26": {
+    "inputs": {
+      "pixels": [
+        "21",
+        0
+      ],
+      "vae": [
+        "6",
+        0
+      ]
+    },
+    "class_type": "VAEEncode",
+    "_meta": {
+      "title": "VAE编码 (缩放后)"
+    }
+  },
+  "27": {
+    "inputs": {
+      "upscale_method": "nearest-exact",
+      "crop": "center",
+      "image": [
+        "28",
+        0
+      ],
+      "width": [
+        "25",
+        0
+      ],
+      "height": [
+        "25",
+        1
+      ]
+    },
+    "class_type": "ImageScale",
+    "_meta": {
+      "title": "缩放Mask"
+    }
+  },
+  "28": {
+    "inputs": {
+      "mask": [
+        "17",
+        1
+      ]
+    },
+    "class_type": "MaskToImage",
+    "_meta": {
+      "title": "Mask转图像"
+    }
+  }
+}

@@ -1,17 +1,18 @@
 # NSFW Inpaint Worker
 
-RunPod Serverless worker for AI-powered clothing removal / NSFW inpainting.
+RunPod Serverless worker for AI-powered clothing removal / NSFW inpainting using **Z-Image Turbo + LanPaint + SAM3**.
 
 ## 🔧 Tech Stack
 
-- **GPU**: RTX 5090 (Blackwell) compatible
+- **GPU**: RTX 5090 (32GB) / RTX 4090 (24GB)
 - **CUDA**: 12.8
 - **PyTorch**: 2.8+
-- **ComfyUI**: Latest
+- **ComfyUI**: 0.4.0
 - **Models**:
-  - FLUX.1-Fill-dev (Inpainting)
-  - SAM3 (Segmentation)
-  - Flux-Uncensored-V2 (NSFW LoRA)
+  - Z-Image Turbo (12GB) - 9-step fast generation
+  - Qwen 3.4B (7.5GB) - Text encoder
+  - SAM3 (3.3GB) - Segmentation
+  - NSFW LoRA (31MB)
 
 ## 📦 Architecture
 
@@ -20,115 +21,117 @@ API Request (image + mask_targets)
     ↓
 RunPod Serverless Worker
     ↓
-┌─────────────────────────────────┐
-│  ComfyUI Pipeline               │
-│  ┌───────────┐                  │
-│  │ SAM3      │ → segment clothes│
-│  └─────┬─────┘                  │
-│        ↓                        │
-│  ┌───────────┐                  │
-│  │ Crop      │ → extract region │
-│  └─────┬─────┘                  │
-│        ↓                        │
-│  ┌───────────┐                  │
-│  │FLUX Fill  │ → inpaint NSFW   │
-│  └─────┬─────┘                  │
-│        ↓                        │
-│  ┌───────────┐                  │
-│  │ Stitch    │ → merge back     │
-│  └───────────┘                  │
-└─────────────────────────────────┘
+┌─────────────────────────────────────────┐
+│  ComfyUI Pipeline                       │
+│  ┌───────────┐                          │
+│  │ SAM3      │ → segment clothes        │
+│  │ (RMBG)    │   (auto mask)            │
+│  └─────┬─────┘                          │
+│        ↓                                │
+│  ┌───────────┐                          │
+│  │ Z-Image   │ → inpaint NSFW           │
+│  │ + LanPaint│   (9 steps, fast!)       │
+│  │ + LoRA    │                          │
+│  └─────┬─────┘                          │
+│        ↓                                │
+│  ┌───────────┐                          │
+│  │MaskBlend  │ → merge result           │
+│  └───────────┘                          │
+└─────────────────────────────────────────┘
     ↓
 Response (NSFW image)
 ```
 
-## 🚀 Deployment
+## 🚀 Quick Start
 
-### 1. Create Network Volume
+### 1. Create Network Volume (RunPod)
 
-```bash
-# On RunPod, create a Network Volume (50-100GB)
-# Region: Choose one with RTX 5090 availability
-```
+- 创建 50GB+ Network Volume
+- 选择有 RTX 4090/5090 的区域
 
-### 2. Initialize Volume (run once)
+### 2. Initialize Volume
 
-```bash
-# Start a temporary Pod with the volume attached
-# Run the init script:
-bash /scripts/init_volume.sh
-```
+参考 [RUNPOD_GUIDE.md](./RUNPOD_GUIDE.md) 进行初始化。
 
-### 3. Build & Push Docker Image
+### 3. Start ComfyUI
 
 ```bash
-docker build -t your-registry/nsfw-inpaint-worker:latest .
-docker push your-registry/nsfw-inpaint-worker:latest
-```
-
-### 4. Create Serverless Endpoint
-
-- Template: Custom
-- Image: `your-registry/nsfw-inpaint-worker:latest`
-- GPU: RTX 5090
-- Network Volume: Attach your volume
-
-## 📡 API Usage
-
-### Request
-
-```json
-POST /runsync
-{
-  "input": {
-    "image": "<base64 encoded image>",
-    "mask_targets": ["skirt", "shirt", "bra"],
-    "prompt": "nude, naked, bare skin, natural body, realistic",
-    "negative_prompt": "clothing, fabric, covered, censored"
-  }
-}
-```
-
-### Response
-
-```json
-{
-  "output": {
-    "image": "<base64 encoded result>",
-    "time_taken": 25.3
-  }
-}
+cd /workspace/ComfyUI && python main.py --listen 0.0.0.0 --port 8188
 ```
 
 ## 📁 Volume Structure
 
 ```
-/runpod-volume/
-└── models/
-    ├── unet/
-    │   └── flux1-fill-dev.safetensors (24GB)
-    ├── loras/
-    │   └── flux-uncensored-v2.safetensors
-    ├── clip/
-    │   ├── clip_l.safetensors
-    │   └── t5xxl_fp16.safetensors
-    ├── vae/
-    │   └── ae.safetensors
-    └── sam/
-        └── sam3_hiera_large.pt
+/workspace/ComfyUI/
+├── models/
+│   ├── diffusion_models/
+│   │   └── z_image_turbo_bf16.safetensors   (12GB)
+│   ├── text_encoders/
+│   │   └── qwen_3_4b.safetensors            (7.5GB)
+│   ├── vae/
+│   │   └── ae.safetensors                   (320MB)
+│   ├── loras/
+│   │   └── zimage-nsfw.safetensors          (31MB)
+│   └── sam/
+│       └── sam3.pt                          (3.3GB)
+└── custom_nodes/
+    ├── LanPaint/
+    └── ComfyUI-RMBG/
+
+Total: ~24GB
 ```
 
 ## ⚡ Performance (RTX 5090)
 
-| Stage | Time |
-|-------|------|
-| SAM3 Segmentation | ~5s |
-| FLUX Fill (per region) | ~5s |
-| Total (3 regions) | ~20-25s |
+| Stage | Time | Notes |
+|-------|------|-------|
+| SAM3 Segmentation | ~5s (hot) / ~110s (cold) | JIT 编译需要时间 |
+| Z-Image Inpaint | ~3-5s | 9 steps, 很快! |
+| **Total (hot)** | ~10s | 模型已在显存 |
+| **Total (cold)** | ~2min | 包含模型加载 |
 
-## 📝 TODO
+## 🔥 Key Features
 
-- [ ] Design complete ComfyUI workflow
-- [ ] Add batch processing support
-- [ ] Add S3 output option
-- [ ] Add quality settings (steps, cfg)
+### Z-Image Turbo
+- Flow Matching 架构，9 步即可出图
+- 比 FLUX 更快，质量相当
+- 关键参数：`cfg=1.0`, `scheduler=simple`, `shift=3`
+
+### LanPaint
+- 训练无关的通用 inpaint 采样器
+- 支持任意模型，无需专门的 inpaint 模型
+- Think Mode 提供更好的边缘融合
+
+### SAM3
+- 最新的分割模型
+- 支持文本提示分割（如 "clothes", "shirt"）
+- 比 SAM2 更准确
+
+## 📋 Workflows
+
+| 工作流 | 用途 |
+|--------|------|
+| `Z_image_Inpaint.json` | 官方 LanPaint Z-Image 工作流 |
+
+## ⚠️ Known Issues
+
+1. **MaskBlend 尺寸问题**: mask 必须是原始图片尺寸，不能是 latent 尺寸
+2. **SAM3 冷启动慢**: 首次加载需要 PyTorch JIT 编译
+3. **4K 图处理**: 需要先 downscale 再处理
+
+## 📅 Roadmap
+
+- [ ] 调试完善工作流
+- [ ] 与 image-gen-flow 集成
+- [ ] 多步 inpaint（配合画师 agent）
+- [ ] Bake SAM3 到 Docker 镜像优化冷启动
+- [ ] RunPod Serverless API
+
+## 📝 Documentation
+
+- [RUNPOD_GUIDE.md](./RUNPOD_GUIDE.md) - 详细的 RunPod 操作指南
+- [workflows/](./workflows/) - ComfyUI 工作流文件
+
+---
+
+*Powered by 月儿 🦊*
