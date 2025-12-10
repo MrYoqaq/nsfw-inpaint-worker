@@ -113,7 +113,10 @@ RUN rm -rf ${COMFYUI_PATH}/custom_nodes/comfyui_controlnet_aux/ckpts && \
     ln -sf /runpod-volume/models/controlnet_aux ${COMFYUI_PATH}/custom_nodes/comfyui_controlnet_aux/ckpts
 
 # Impact Pack 的模型目录
-RUN mkdir -p /runpod-volume/models/ultralytics && \
+# 🔥 必须先 rm -rf！否则如果目录已存在，ln -sf 会在目录内部创建软链接！
+RUN rm -rf ${COMFYUI_PATH}/models/ultralytics && \
+    rm -rf ${COMFYUI_PATH}/models/sams && \
+    mkdir -p /runpod-volume/models/ultralytics && \
     mkdir -p /runpod-volume/models/sams && \
     ln -sf /runpod-volume/models/ultralytics ${COMFYUI_PATH}/models/ultralytics && \
     ln -sf /runpod-volume/models/sams ${COMFYUI_PATH}/models/sams
