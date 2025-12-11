@@ -41,9 +41,38 @@ MODEL_MAP = {
 # ComfyUI 启动
 # ═══════════════════════════════════════════════════════════════
 
+def fix_controlnet_aux_symlink():
+    """
+    🔥 修复 controlnet_aux/ckpts 软链接问题
+
+    问题：ckpts 是软链接 → /runpod-volume/models/controlnet_aux
+    当 huggingface_hub 尝试在 ckpts 下创建 .huggingface 目录时会失败
+
+    解决：删除软链接，创建真正的目录，让模型下载到本地
+    （冷启动会重新下载，但至少能工作）
+    """
+    ckpts_path = f"{COMFYUI_PATH}/custom_nodes/comfyui_controlnet_aux/ckpts"
+
+    try:
+        # 检查是否是软链接
+        if os.path.islink(ckpts_path):
+            print(f"[FIX] 发现软链接: {ckpts_path}")
+            os.unlink(ckpts_path)  # 删除软链接
+            os.makedirs(ckpts_path, exist_ok=True)  # 创建真正的目录
+            print(f"[FIX] 已转换为真实目录")
+        elif not os.path.exists(ckpts_path):
+            os.makedirs(ckpts_path, exist_ok=True)
+            print(f"[FIX] 创建目录: {ckpts_path}")
+    except Exception as e:
+        print(f"[WARN] 修复 ckpts 目录失败: {e}")
+
+
 def start_comfyui():
     """启动 ComfyUI 服务"""
     global comfy_process, comfy_api
+
+    # 🔥 修复软链接问题
+    fix_controlnet_aux_symlink()
 
     # 🔥 用 DEVNULL 丢弃输出，避免 pipe 缓冲区满导致死锁！
     # 之前用 PIPE 但不读取，ComfyUI 输出太多会阻塞整个进程！
